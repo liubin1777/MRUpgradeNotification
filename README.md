@@ -17,6 +17,10 @@ Adding this class to your project is simple:
 
 Where `123456` is your application's App Store ID
 
+## Screenshot
+
+![What it looks like](https://github.com/markrickert/MRUpgradeNotification/raw/master/screenshots/example.png)
+
 ## Dependencies
 
 This project relies on Stig Brautaset's superb JSON parsing library: [json-framework](https://github.com/stig/json-framework/). You must have this library in your project for this code to work properly.
