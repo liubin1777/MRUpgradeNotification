@@ -1,6 +1,6 @@
 # MRUpgradeNotification
 
-## Well, not a nag, but a "reminder"
+## What is it?
 
 This is a simple singleton class that will automatically
 check the app store every day and alert the user at launch
@@ -13,7 +13,7 @@ Adding this class to your project is simple:
 1. Import the header file into your application delegate
 2. Add this code to your `application:application didFinishLaunching` function:
 
-    	[MRUpgradeNag checkUpgradeForAppID:123456];
+    	[MRUpgradeNotification checkUpgradeForAppID:123456];
 
 Where `123456` is your application's App Store ID
 
