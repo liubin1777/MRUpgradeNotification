@@ -23,7 +23,8 @@ Where `123456` is your application's App Store ID
 
 ## Dependencies
 
-This project relies on Stig Brautaset's superb JSON parsing library: [json-framework](https://github.com/stig/json-framework/). You must have this library in your project for this code to work properly.
+This project relies on [JSONKit](http://github.com/johnezang/JSONKit/) by John Engelhart.
+You must have this library in your project for this code to work properly.
 
 ## Credits
 

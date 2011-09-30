@@ -31,7 +31,7 @@
  */
 
 #import "MRUpgradeNotification.h"
-#import "SBJson.h"
+#import "JSONKit.h"
 
 #define kMRUpgradeLastChecked @"kMRUpgradeLastChecked"
 #define kMRUpgradeShownForVersion @"kMRUpgradeShownForVersion"
@@ -60,9 +60,8 @@
 		NSURL *AppStoreLookupURL = [NSURL URLWithString:appStoreLookupURLString];
 
 		//Pull that application's descriptior from Apple.
-		SBJsonParser *parser = [[SBJsonParser alloc] init];
-		NSDictionary *appStoreDict = [parser objectWithData:[NSData dataWithContentsOfURL:AppStoreLookupURL]];
-		[parser release];
+		JSONDecoder *jsonKitDecoder = [JSONDecoder decoder];
+		NSDictionary *appStoreDict = [jsonKitDecoder objectWithData:[NSData dataWithContentsOfURL:AppStoreLookupURL]];
 
 		if(appStoreDict != nil)
 		{
