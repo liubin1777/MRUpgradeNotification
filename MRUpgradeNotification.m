@@ -33,6 +33,12 @@
 #import "MRUpgradeNotification.h"
 #import "SBJson.h"
 
+#define kMRUpgradeLastChecked @"kMRUpgradeLastChecked"
+#define kMRUpgradeShownForVersion @"kMRUpgradeShownForVersion"
+#define kMRUpgradeAppStoreLookupURL @"http://ax.itunes.apple.com/WebObjects/MZStoreServices.woa/wa/wsLookup?id=%u"
+#define kMRUpgradeCheckInterval 86400 //Once a day
+#define kMRUpgradeAlertTitle @"Application Update Available!"
+
 @interface MRUpgradeNotification (PrivateMethods)
 	+(double)dateDiff:(NSDate *)origDate;
 	+(NSComparisonResult)compareVersion:(NSString *)leftVersion with:(NSString *)rightVersion;
@@ -41,14 +47,16 @@
 
 @implementation MRUpgradeNotification
 
-+ (void) checkUpgradeForAppID:(int) applicationID {
-
++ (void) checkUpgradeForAppID:(int) applicationID
+{
+	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+	
 	//Get the last update check
-	NSDate *lastChecked = [[NSUserDefaults standardUserDefaults] objectForKey:@"MRUpgradeNagLastChecked"];
-	NSLog(@"Last Checked: %@", lastChecked);
-	if(!lastChecked || [self dateDiff:lastChecked] > 86400) { //Only check once a day
-		
-		NSString *appStoreLookupURLString = [NSString stringWithFormat:@"http://ax.itunes.apple.com/WebObjects/MZStoreServices.woa/wa/wsLookup?id=%u", applicationID];
+	NSDate *lastChecked = [defaults objectForKey:kMRUpgradeLastChecked];
+	NSLog(@"MRUpgradeNotification Last Checked: %@", lastChecked);
+	if(!lastChecked || [MRUpgradeNotification dateDiff:lastChecked] > kMRUpgradeCheckInterval) 
+	{
+		NSString *appStoreLookupURLString = [NSString stringWithFormat:kMRUpgradeAppStoreLookupURL, applicationID];
 		NSURL *AppStoreLookupURL = [NSURL URLWithString:appStoreLookupURLString];
 
 		//Pull that application's descriptior from Apple.
@@ -56,36 +64,44 @@
 		NSDictionary *appStoreDict = [parser objectWithData:[NSData dataWithContentsOfURL:AppStoreLookupURL]];
 		[parser release];
 
-		if(!appStoreDict)return; //Didn't get anything from the app store.
-
-		NSString *currentApplicationVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:(NSString*)kCFBundleVersionKey];
-		NSString *storeApplicationVersion = [appStoreDict objectForKey:@"version"];
-
-		if(!storeApplicationVersion)return; //Couldn't find the application version from the json dictioary
-		
-		NSComparisonResult versionDifferences = [MRUpgradeNotification compareVersion:currentApplicationVersion with:storeApplicationVersion];
-		if(versionDifferences == NSOrderedAscending && ![[NSUserDefaults standardUserDefaults] objectForKey:[NSString stringWithFormat:@"MRUpgradeNagShownForVersion%@", storeApplicationVersion]]) {
-			//Show the alert.
-			NSString *appName = [[[NSBundle mainBundle] infoDictionary] objectForKey:(NSString*)kCFBundleNameKey];
-			UIAlertView *nagAlert = [[[UIAlertView alloc] initWithTitle:@"Application Update Available!" 
-																													message:[NSString stringWithFormat:@"There is an update to %@. Version %@ is now available (you have %@).\n\nVisit the App Store to download and install the new version!", appName, storeApplicationVersion, currentApplicationVersion]
-																												delegate:nil 
-																							 cancelButtonTitle:@"OK" 
-																								otherButtonTitles:nil] autorelease];
-			[nagAlert show];
+		if(appStoreDict != nil)
+		{
+			NSLog(@"appStoreDict != nil\n%@", [appStoreDict valueForKeyPath:@"results"]);
+			NSString *currentApplicationVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:(NSString*)kCFBundleVersionKey];
 			
-			[[NSUserDefaults standardUserDefaults] setBool:YES forKey:[NSString stringWithFormat:@"MRUpgradeNagShownForVersion%@", storeApplicationVersion]];
+			NSDictionary *appStoreQueryResults = [[appStoreDict valueForKey:@"results"] objectAtIndex:0];
+			NSString *storeApplicationVersion = [appStoreQueryResults valueForKey:@"version"];
+			
+			if(storeApplicationVersion != nil && ![defaults objectForKey:[NSString stringWithFormat:@"%@%@", kMRUpgradeShownForVersion, storeApplicationVersion]])
+			{
+				NSLog(@"haven't checked for this version");
+				NSComparisonResult versionDifferences = [MRUpgradeNotification compareVersion:currentApplicationVersion with:storeApplicationVersion];
+				if(versionDifferences == NSOrderedAscending)
+				{
+					//Show the alert.
+					NSString *appName = [[[NSBundle mainBundle] infoDictionary] objectForKey:(NSString*)kCFBundleNameKey];
+					UIAlertView *upgradeAlert = [[[UIAlertView alloc] initWithTitle:kMRUpgradeAlertTitle
+																															message:[NSString stringWithFormat:@"There is an update to %@. Version %@ is now available (you have %@).\n\nVisit the App Store to download and install the new version!", appName, storeApplicationVersion, currentApplicationVersion]
+																														 delegate:nil 
+																										cancelButtonTitle:@"OK" 
+																										otherButtonTitles:nil] autorelease];
+					[upgradeAlert show];
+					
+					[defaults setBool:YES forKey:[NSString stringWithFormat:@"%@%@", kMRUpgradeShownForVersion, storeApplicationVersion]];
+				}
+			}
 		}
 		
-		[[NSUserDefaults standardUserDefaults] setObject:[NSDate date] forKey:@"MRUpgradeNagLastChecked"];
-		[[NSUserDefaults standardUserDefaults] synchronize];
+		NSLog(@"Setting last checked date.");
+		[defaults setObject:[NSDate date] forKey:kMRUpgradeLastChecked];
+		[defaults synchronize];
 	}
 }
 
-+(double)dateDiff:(NSDate *)origDate {
++(double)dateDiff:(NSDate *)origDate
+{
   double ti = [origDate timeIntervalSinceNow];
   ti = ti * -1;
-  
 	return ti;
 }
 
