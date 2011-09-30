@@ -49,6 +49,8 @@
 
 + (void) checkUpgradeForAppID:(int) applicationID
 {
+	if(!applicationID || applicationID < 0)return;
+	
 	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 	
 	//Get the last update check
